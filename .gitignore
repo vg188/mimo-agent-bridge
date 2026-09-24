@@ -1,8 +1,8 @@
 # Build
 target/
 **/target/
-dist/
-release/
+/dist/
+/release/
 *.exe
 *.dll
 *.msi
