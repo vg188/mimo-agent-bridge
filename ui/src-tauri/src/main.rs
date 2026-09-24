@@ -206,7 +206,8 @@ fn save_cookie(cookie: String, state: State<BridgeProc>) -> CmdResult {
 #[tauri::command]
 fn extract_cookie(state: State<BridgeProc>) -> CmdResult {
     let root = state.root.lock().unwrap().clone();
-    match run_bridge_cli(&root, &["auth", "--extract"]) {
+    // Auto-detect: try immediately, then wait for Desktop to release the cookie DB.
+    match run_bridge_cli(&root, &["auth", "--auto", "--wait", "90"]) {
         Ok(msg) => ok(msg),
         Err(e) => err(e),
     }

@@ -5,7 +5,7 @@ import json
 import os
 import sys
 
-from .auth import auth_status, extract_from_cookie_db, resolve_session, session_from_cookie_header
+from .auth import auth_status, extract_from_cookie_db, resolve_session, session_from_cookie_header, wait_and_extract
 from .client import MimoClient, UpstreamError, models_payload, normalize_model
 from .config import dump_public, load_auth, save_auth, settings_from_env
 from .server import serve
@@ -16,13 +16,17 @@ def cmd_auth(args: argparse.Namespace) -> int:
     if args.status:
         print(json.dumps(auth_status(settings), ensure_ascii=False, indent=2))
         return 0
-    if args.extract:
+    if args.extract or getattr(args, "auto", False):
+        wait_s = float(getattr(args, "wait", 0) or 0)
         session = extract_from_cookie_db(verbose=True)
+        if not (session and session.has_session()) and wait_s > 0:
+            print(f"[auto] Cookie 库被 MiMo Desktop 占用，等待解锁 {wait_s:.0f}s…", file=sys.stderr)
+            print("[auto] 现在可以：关闭 MiMo Desktop（约 2 秒）→ 将自动识别，无需粘贴 Cookie", file=sys.stderr)
+            session = wait_and_extract(timeout_s=wait_s, verbose=True)
         if not session or not session.has_session():
-            print("extract failed. Cookie DB locked or unreadable.", file=sys.stderr)
-            print("If MiMo Desktop is running, close it briefly and retry, or paste cookies:", file=sys.stderr)
-            print("  mimo-bridge auth --cookie 'userId=...; passToken=...; serviceToken=...'", file=sys.stderr)
-            print("  mimo-bridge auth --cookie-file cookie.txt", file=sys.stderr)
+            print("auto extract failed (cookie DB still locked).", file=sys.stderr)
+            print("最简单：关闭 MiMo Desktop 后执行 mimo-bridge auth --auto --wait 30", file=sys.stderr)
+            print("或粘贴 Cookie: mimo-bridge auth --cookie 'userId=...; passToken=...; serviceToken=...'", file=sys.stderr)
             return 2
         path = save_auth(settings, session)
         print(json.dumps({"ok": True, "saved": str(path), "auth": dump_public(session)}, ensure_ascii=False, indent=2))
@@ -170,6 +174,8 @@ def build_parser() -> argparse.ArgumentParser:
     auth.add_argument("--cookie", help="Cookie header from DevTools (userId/passToken/serviceToken...)")
     auth.add_argument("--cookie-file", help="File containing Cookie header text")
     auth.add_argument("--extract", action="store_true", help="Try extract from Chromium cookie DB")
+    auth.add_argument("--auto", action="store_true", help="Auto-detect session (recommended)")
+    auth.add_argument("--wait", type=float, default=0, help="Seconds to wait for cookie DB unlock (e.g. 60)")
     auth.add_argument("--status", action="store_true", help="Show current auth status")
     auth.set_defaults(func=cmd_auth)
 

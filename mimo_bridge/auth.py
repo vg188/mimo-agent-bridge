@@ -205,6 +205,69 @@ def _load_chromium_key(user_data_dir: Path) -> bytes:
     return _dpapi_unprotect(encrypted)
 
 
+def try_copy_locked(src: Path, dst: Path) -> bool:
+    """Try multiple ways to snapshot a Chromium cookie DB even if Desktop holds it."""
+    # 1) plain copy
+    if _copy_unlocked(src, dst):
+        return True
+    # 2) esentutl /y (VSS-less file copy, sometimes works)
+    if os.name == "nt":
+        try:
+            import subprocess
+
+            r = subprocess.run(
+                ["esentutl", "/y", str(src), "/d", str(dst), "/o"],
+                capture_output=True,
+                timeout=15,
+            )
+            if r.returncode == 0 and dst.exists() and dst.stat().st_size > 0:
+                return True
+        except Exception:
+            pass
+        # 3) robocopy backup mode
+        try:
+            import subprocess
+
+            parent = src.parent
+            r = subprocess.run(
+                ["robocopy", str(parent), str(dst.parent), src.name, "/B", "/COPY:DAT", "/R:0", "/W:0"],
+                capture_output=True,
+                timeout=15,
+            )
+            candidate = dst.parent / src.name
+            if candidate.exists() and candidate.stat().st_size > 0:
+                if candidate != dst:
+                    try:
+                        dst.write_bytes(candidate.read_bytes())
+                    except OSError:
+                        return candidate.exists()
+                return True
+        except Exception:
+            pass
+    return False
+
+
+def wait_and_extract(timeout_s: float = 60.0, interval_s: float = 0.4, verbose: bool = False) -> AuthSession | None:
+    """
+    Auto-recover session while MiMo Desktop holds the cookie DB exclusive lock.
+    The moment Desktop releases it (user quits Desktop, or it restarts), we snapshot and decrypt.
+    """
+    import time as _time
+
+    deadline = _time.time() + max(0.0, timeout_s)
+    attempt = 0
+    while True:
+        attempt += 1
+        session = extract_from_cookie_db(verbose=verbose)
+        if session and session.has_session():
+            return session
+        if _time.time() >= deadline:
+            return None
+        if verbose and attempt % 5 == 1:
+            print(f"[auto] waiting for cookie DB unlock… ({int(max(0, deadline - _time.time()))}s left)")
+        _time.sleep(interval_s)
+
+
 def extract_from_cookie_db(db_path: Path | None = None, verbose: bool = False) -> AuthSession | None:
     """Best-effort extract Xiaomi session cookies from Chromium cookie DB."""
     candidates = [db_path] if db_path else chrome_cookie_db_candidates()
@@ -224,7 +287,7 @@ def extract_from_cookie_db(db_path: Path | None = None, verbose: bool = False) -
             if verbose:
                 print(f"[extract] skip missing {src}")
             continue
-        if not _copy_unlocked(src, tmp):
+        if not try_copy_locked(src, tmp):
             if verbose:
                 print(f"[extract] locked/unreadable {src}")
             continue

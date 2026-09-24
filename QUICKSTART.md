@@ -10,21 +10,20 @@
 
 ## 3 分钟上手
 
-### 1. 导入登录态（只需一次）
-
-1. 打开 MiMo Desktop，确认已登录小米账号  
-2. `Ctrl+Shift+I` → **Network** → 任意请求 → 复制整行 `Cookie:`  
-3. 执行：
+### 1. 导入登录态（自动，无需粘贴）
 
 ```powershell
-cd MiMoAgentBridge
-.\auth.ps1 -Cookie 'userId=...; passToken=...; serviceToken=...'
+# 推荐：自动识别（会等 Cookie 解锁）
+.\auth.ps1 -Extract
+# 等价于: python -m mimo_bridge auth --auto --wait 90
 ```
 
-或关闭 MiMo Desktop 后：
+看到「等待解锁」时，**关闭 MiMo Desktop 约 2 秒**再打开即可——不用复制 Cookie。
+
+仍失败才手动粘贴：
 
 ```powershell
-.\auth.ps1 -Extract
+.\auth.ps1 -Cookie 'userId=...; passToken=...; serviceToken=...'
 ```
 
 ### 2. 自检 + 启动
