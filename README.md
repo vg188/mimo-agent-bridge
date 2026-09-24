@@ -4,6 +4,20 @@
 
 > **仅限本人已购订阅、本机使用。** Cookie 等同账号凭证，请勿上传或分享。本项目与小米官方无关，接口为客户端行为整理，无兼容性保证。
 
+## 界面预览
+
+| 总览 | 接入配置 |
+|---|---|
+| ![总览](docs/screenshots/ui-home.png) | ![接入配置](docs/screenshots/ui-api.png) |
+
+| 登录态 | 套餐用量 | 全模态 |
+|---|---|---|
+| ![登录态](docs/screenshots/ui-auth.png) | ![套餐用量](docs/screenshots/ui-plan.png) | ![全模态](docs/screenshots/ui-multimodal.png) |
+
+**测试结果**
+
+![test results](docs/screenshots/test-results.png)
+
 ## 功能
 
 | 协议 | 路径 |
