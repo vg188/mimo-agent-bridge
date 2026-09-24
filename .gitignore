@@ -1,0 +1,39 @@
+# Build
+target/
+**/target/
+dist/
+release/
+*.exe
+*.dll
+*.msi
+*.zip
+!docs/**/*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Secrets / local auth (NEVER commit)
+auth.json
+*.auth.json
+.env
+.env.*
+cookie.txt
+cookies.txt
+secrets.json
+
+# App local data
+.mimo-agent-bridge/
+packaging/launcher/assets/app.zip
+packaging/app/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

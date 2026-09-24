@@ -1,0 +1,16 @@
+[project]
+name = "mimo-agent-bridge"
+version = "0.1.0"
+description = "Expose MiMo Desktop subscription as local OpenAI/Anthropic APIs for personal agents"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+mimo-bridge = "mimo_bridge.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["mimo_bridge*"]
